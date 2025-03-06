@@ -1,0 +1,24 @@
+server:
+  tomcat:
+    accesslog:
+      enabled: true
+      pattern: '{
+        "@timestamp":"%{begin:yyyy-MM-dd}tT%{begin:HH:mm:ss.SSSZ}t",
+        "correlation-id":"%{CorrelationId}i",
+        "remote-user":"%{User-Agent}i",
+        "request-method":"%m",
+        "request-path":"%U",
+        "status-code":"%s" ,
+        "bytes-sent":"%b",
+        "elapsed-time":"%{ms}T"}'
+      directory: /dev
+      suffix:
+      prefix: "stdout"
+      file-date-format:
+
+s3:
+  buckets:
+    - callum-test-bucket
+  audit:
+    enabled: true
+    bucketName: callum-test-bucket-audit
