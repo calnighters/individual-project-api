@@ -1,0 +1,260 @@
+openapi: "3.1.0"
+info:
+  title: "individual_project_api API"
+  description: "individual_project_api API"
+  version: "1.0.0"
+servers:
+  - url: "https://individual_project_api"
+paths:
+  /api/v1/s3/buckets:
+    get:
+      summary: "GET api/v1/s3/buckets"
+      operationId: "listBuckets"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ListBucketsResponse"
+  /api/v1/s3/buckets/{bucketName}/contents:
+    get:
+      summary: "GET api/v1/s3/buckets/{bucketName}/contents"
+      operationId: "listContents"
+      parameters:
+        - name: "bucketName"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ListContentsResponse"
+  /api/v1/s3/buckets/{bucketName}/file:
+    post:
+      summary: "POST api/v1/s3/buckets/{bucketName}/file"
+      operationId: "getFile"
+      parameters:
+        - name: "bucketName"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GetFileRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/InputStreamResource"
+  /api/v1/s3/buckets/{bucketName}/pre-upload:
+    post:
+      summary: "POST api/v1/s3/buckets/{bucketName}/pre-upload"
+      operationId: "preUploadObject"
+      parameters:
+        - name: "bucketName"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+        - name: "file"
+          in: "query"
+          required: true
+          schema:
+            type: "string"
+            format: "binary"
+        - name: "objectKey"
+          in: "query"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PreUploadObjectResponse"
+  /api/v1/s3/buckets/{bucketName}/upload:
+    post:
+      summary: "POST api/v1/s3/buckets/{bucketName}/upload"
+      operationId: "uploadObject"
+      parameters:
+        - name: "bucketName"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+        - name: "file"
+          in: "query"
+          required: true
+          schema:
+            type: "string"
+            format: "binary"
+        - name: "objectKey"
+          in: "query"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+  /api/v1/audit/diff:
+    post:
+      summary: "POST api/v1/audit/diff"
+      operationId: "getAuditDiff"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuditDiffRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AuditDiff"
+  /api/v1/audit/search:
+    post:
+      summary: "POST api/v1/audit/search"
+      operationId: "searchAuditRecords"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuditSearchRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AuditSearchResponse"
+components:
+  schemas:
+    Bucket:
+      type: "object"
+      properties:
+        name:
+          type: "string"
+    ListBucketsResponse:
+      type: "object"
+      properties:
+        buckets:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/Bucket"
+    BucketObject:
+      type: "object"
+      properties:
+        objectKey:
+          type: "string"
+        objectSize:
+          type: "integer"
+          format: "int64"
+        lastModifiedTimestamp:
+          type: "string"
+          format: "date-time"
+    ListContentsResponse:
+      type: "object"
+      properties:
+        objects:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/BucketObject"
+    GetFileRequest:
+      type: "object"
+      properties:
+        objectKey:
+          type: "string"
+    InputStreamResource:
+      type: "object"
+      properties:
+        description:
+          type: "string"
+      required:
+        - "description"
+    PreUploadObjectResponse:
+      type: "object"
+      properties:
+        newUpload:
+          type: "boolean"
+        unifiedDiff:
+          type: "array"
+          items:
+            type: "string"
+    AuditDiffRequest:
+      type: "object"
+      properties:
+        auditObjectKey:
+          type: "string"
+    AuditDiff:
+      type: "object"
+      properties:
+        unifiedDiff:
+          type: "array"
+          items:
+            type: "string"
+    AuditSearchRequest:
+      type: "object"
+      properties:
+        eventType:
+          type: "string"
+          enum:
+            - "VIEW"
+            - "UPLOAD"
+            - "MODIFY"
+            - "DELETE"
+        objectKey:
+          type: "string"
+        bucketName:
+          type: "string"
+        userName:
+          type: "string"
+        fromDate:
+          type: "string"
+          format: "date-time"
+        toDate:
+          type: "string"
+          format: "date-time"
+    AuditInfo:
+      type: "object"
+      properties:
+        eventType:
+          type: "string"
+          enum:
+            - "VIEW"
+            - "UPLOAD"
+            - "MODIFY"
+            - "DELETE"
+        objectKey:
+          type: "string"
+        bucketName:
+          type: "string"
+        userName:
+          type: "string"
+        auditDate:
+          type: "string"
+          format: "date-time"
+        auditObjectKey:
+          type: "string"
+    AuditSearchResponse:
+      type: "object"
+      properties:
+        auditRecords:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/AuditInfo"
