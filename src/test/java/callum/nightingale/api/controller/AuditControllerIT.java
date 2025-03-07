@@ -2,8 +2,10 @@ package callum.nightingale.api.controller;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import callum.nightingale.api.dto.audit.model.AuditDiff;
 import callum.nightingale.api.dto.audit.model.AuditEventType;
 import callum.nightingale.api.dto.audit.model.AuditInfo;
 import callum.nightingale.api.dto.audit.request.AuditSearchRequest;
@@ -66,18 +68,51 @@ public class AuditControllerIT {
           .build());
 
       mvc.perform(post("/api/v1/audit/search")
-          .content("""
-              {
-                "bucketName": "bucketName",
-                "objectKey": "objectKey",
-                "userName": "userName",
-                "fromDate": "2023-01-01T00:00:00",
-                "toDate": "2024-12-31T23:59:59",
-                "eventType": "MODIFY_OBJECT"
-              }
-              """)
-          .contentType(MediaType.APPLICATION_JSON))
+              .content("""
+                  {
+                    "bucketName": "bucketName",
+                    "objectKey": "objectKey",
+                    "userName": "userName",
+                    "fromDate": "2023-01-01T00:00:00",
+                    "toDate": "2024-12-31T23:59:59",
+                    "eventType": "MODIFY"
+                  }
+                  """)
+              .contentType(MediaType.APPLICATION_JSON))
           .andExpect(status().isOk());
+    }
+  }
+
+  @Nested
+  @DisplayName("POST /api/v1/audit/diff")
+  class GetAuditDiff {
+
+    @Test
+    @DisplayName("When audit diff is found then a response containing the audit diff is returned")
+    void auditDiffFound() throws Exception {
+      when(auditService.getAuditDiff("auditObjectKey")).thenReturn(AuditDiff.builder()
+          .unifiedDiff(List.of(
+              "diff1",
+              "diff2"
+          ))
+          .build());
+
+      mvc.perform(post("/api/v1/audit/diff")
+              .content("""
+                  {
+                    "auditObjectKey": "auditObjectKey"
+                  }
+                  """)
+              .contentType(MediaType.APPLICATION_JSON))
+          .andExpect(status().isOk())
+          .andExpect(content().json("""
+              {
+                "unifiedDiff": [
+                  "diff1",
+                  "diff2"
+                ]
+              }
+              """));
     }
   }
 }

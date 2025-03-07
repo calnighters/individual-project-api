@@ -43,10 +43,10 @@ public class AuditService {
   private String auditBucketName;
   @Value("${s3.audit.enabled:true}")
   private boolean auditEnabled;
-  @Value("${s3.audit.maxRecords:20}")
+  @Value("${s3.audit.maxRecords:100}")
   private int maxAuditRecords;
 
-  public void auditDiff(AuditEventType eventType, String bucketName, String objectKey,
+  public void writeAuditDiff(AuditEventType eventType, String bucketName, String objectKey,
       String userName, List<String> unifiedDiff) {
     if (!auditEnabled) {
       return;
@@ -173,7 +173,9 @@ public class AuditService {
                   .eventType(AuditEventType.valueOf(s3Object.key().split("/")[0]))
                   .auditObjectKey(s3Object.key())
                   .build();
-            }).toList())
+            })
+            .sorted((a, b) -> b.getAuditDate().compareTo(a.getAuditDate()))
+            .toList())
         .build();
   }
 

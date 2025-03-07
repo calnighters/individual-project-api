@@ -6,6 +6,7 @@ import callum.nightingale.api.dto.s3.model.BucketObject;
 import callum.nightingale.api.dto.s3.response.ListBucketsResponse;
 import callum.nightingale.api.dto.s3.response.ListContentsResponse;
 import callum.nightingale.api.dto.s3.response.PreUploadObjectResponse;
+import callum.nightingale.api.exception.ForbiddenException;
 import callum.nightingale.api.exception.NotFoundException;
 import callum.nightingale.api.properties.S3Properties;
 import com.github.difflib.DiffUtils;
@@ -17,9 +18,9 @@ import java.io.InputStreamReader;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -54,13 +55,15 @@ public class S3Service {
             .map(bucket -> Bucket.builder()
                 .name(bucket)
                 .build())
+            .sorted(Comparator.comparing(Bucket::getName))
             .toList())
         .build();
   }
 
-  // TODO - ensure bucket provided is in the list of buckets
-
   public ListContentsResponse listContents(String bucketName) {
+    if (!s3Properties.getBuckets().contains(bucketName)) {
+      throw new ForbiddenException(String.format("Forbidden to access bucket %s", bucketName));
+    }
     HeadBucketRequest headBucketRequest = HeadBucketRequest.builder()
         .bucket(bucketName)
         .build();
@@ -83,24 +86,31 @@ public class S3Service {
                 .lastModifiedTimestamp(
                     LocalDateTime.ofInstant(object.lastModified(), ZoneId.of("Europe/London")))
                 .build())
+            .sorted((a, b) -> b.getLastModifiedTimestamp().compareTo(a.getLastModifiedTimestamp()))
             .toList())
         .build();
   }
 
   public ResponseEntity<InputStreamResource> getFile(String bucketName, String key) {
+    if (!s3Properties.getBuckets().contains(bucketName)) {
+      throw new ForbiddenException(String.format("Forbidden to access bucket %s", bucketName));
+    }
     InputStreamResource resource = new InputStreamResource(getObject(bucketName, key));
 
     HttpHeaders headers = new HttpHeaders();
     headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + key);
     headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
 
-    auditService.auditDiff(AuditEventType.VIEW, bucketName, key, userName,
+    auditService.writeAuditDiff(AuditEventType.VIEW, bucketName, key, userName,
         Collections.emptyList());
 
     return new ResponseEntity<>(resource, headers, HttpStatus.OK);
   }
 
   public void uploadFile(String bucketName, MultipartFile file, String objectKey) {
+    if (!s3Properties.getBuckets().contains(bucketName)) {
+      throw new ForbiddenException(String.format("Forbidden to access bucket %s", bucketName));
+    }
     PreUploadObjectResponse preUploadObjectResponse = preUploadFile(bucketName, file, objectKey);
 
     PutObjectRequest putObjectRequest = PutObjectRequest.builder()
@@ -115,16 +125,19 @@ public class S3Service {
     }
 
     if (preUploadObjectResponse.isNewUpload()) {
-      auditService.auditDiff(AuditEventType.UPLOAD, bucketName, objectKey, userName,
+      auditService.writeAuditDiff(AuditEventType.UPLOAD, bucketName, objectKey, userName,
           Collections.emptyList());
     } else {
-      auditService.auditDiff(AuditEventType.MODIFY, bucketName, objectKey, userName,
+      auditService.writeAuditDiff(AuditEventType.MODIFY, bucketName, objectKey, userName,
           preUploadObjectResponse.getUnifiedDiff());
     }
   }
 
   public PreUploadObjectResponse preUploadFile(String bucketName, MultipartFile file,
       String objectKey) {
+    if (!s3Properties.getBuckets().contains(bucketName)) {
+      throw new ForbiddenException(String.format("Forbidden to access bucket %s", bucketName));
+    }
     ResponseInputStream<GetObjectResponse> object;
     try {
       object = getObject(bucketName, objectKey);

@@ -6,7 +6,6 @@ import callum.nightingale.api.dto.audit.request.AuditSearchRequest;
 import callum.nightingale.api.dto.audit.response.AuditSearchResponse;
 import callum.nightingale.api.service.AuditService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
