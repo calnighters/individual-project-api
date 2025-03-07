@@ -43,7 +43,7 @@ public class AuditService {
   private String auditBucketName;
   @Value("${s3.audit.enabled:true}")
   private boolean auditEnabled;
-  @Value("${s3.audit.maxRecords:100}")
+  @Value("${s3.audit.maxRecords:200}")
   private int maxAuditRecords;
 
   public void writeAuditDiff(AuditEventType eventType, String bucketName, String objectKey,

@@ -17,8 +17,10 @@ server:
       file-date-format:
 
 s3:
+  endpoint: https://s3.eu-west-2.amazonaws.com
   buckets:
-    - callum-test-bucket
+    - ${TEST_BUCKET_1}
+    - ${TEST_BUCKET_2}
   audit:
     enabled: true
-    bucketName: callum-test-bucket-audit
+    bucketName: ${AUDIT_BUCKET}
